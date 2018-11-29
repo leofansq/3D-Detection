@@ -12,9 +12,10 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 import tensorflow as tf
+import numpy as np
 
 from avod.core import ops
-
+from avod.core import rep_loss as reploss
 
 class Loss(object):
     """Abstract base class for loss functions."""
@@ -173,3 +174,61 @@ class WeightedSoftmaxLoss(Loss):
             logits=tf.reshape(prediction_tensor, [-1, num_classes])))
 
         return tf.reduce_sum(per_row_cross_ent) * weight
+
+
+class RepulsionLoss(Loss):
+
+
+    def __init__(self, alpha=0.5, betta=0.5,
+                 smooth_rep_gt=0.99, smooth_rep_box=0.01):
+        """Constructor.
+        """
+        self._alpha = alpha
+        self._betta = betta
+        self._smooth_rep_gt = smooth_rep_gt
+        self._smooth_rep_box = smooth_rep_box
+
+    def _compute_loss(self,
+                      prediction_tensor,
+                      target_tensor,
+                      weight,
+                      class_indices=None):
+
+        len_of_pre = tf.shape(prediction_tensor)[0]
+        len_of_tar = tf.shape(target_tensor)[0]
+
+        #For attraction_term & rep_term_gt : Calculate IOU of Pre & Tar
+        pre = tf.tile(tf.expand_dims(prediction_tensor,1),[1,len_of_tar,1])   #shape[len_of_pre,len_of_tar,6]
+        tar = tf.tile(tf.expand_dims(target_tensor,0),[len_of_pre,1,1])   #shape[len_of_pre,len_of_tar,6]     
+        ious = reploss.cal_iou(pre,tar)  #shape[len_of_pre,len_of_tar,1]
+
+        #For rep_term_box : Caluculate IOU of Pre & Pre
+        pre_1 = tf.tile(tf.expand_dims(prediction_tensor,1),[1,len_of_pre,1]) #shape[len_of_pre,len_of_pre,6]
+        pre_2 = tf.tile(tf.expand_dims(target_tensor,0),[len_of_pre,1,1])  #shape[len_of_pre,len_of_pre,6]
+        ious_over_pre = reploss.cal_iou(pre_1,pre_2)  #shape[len_of_pre,len_of_pre,1]
+
+        rep_loss = tf.reduce_sum([
+                  reploss.attraction_term(prediction_tensor,target_tensor,ious),
+                  self._alpha*reploss.rep_term_gt(prediction_tensor,target_tensor,ious,self._smooth_rep_gt),
+                  self._betta*reploss.rep_term_box(ious_over_pre,self._smooth_rep_box)])
+        return rep_loss*weight
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                 
+

@@ -576,7 +576,7 @@ class RpnModel(model.DetectionModel):
 
         # Temporary predictions for debugging
         # predictions['anchor_ious'] = anchor_ious
-        # predictions['anchor_offsets'] = all_offsets_gt
+        predictions['anchor_offsets'] = all_offsets_gt
 
         if self._train_val_test in ['train', 'val']:
             # All anchors
@@ -875,7 +875,9 @@ class RpnModel(model.DetectionModel):
 
         # these should include mini-batch values only
         objectness_gt = prediction_dict[self.PRED_MB_OBJECTNESS_GT]
+	
         offsets_gt = prediction_dict[self.PRED_MB_OFFSETS_GT]
+        #offsets_gt = prediction_dict['anchor_offsets']
 
         # Predictions
         with tf.variable_scope('rpn_prediction_mini_batch'):
@@ -884,6 +886,13 @@ class RpnModel(model.DetectionModel):
 
         with tf.variable_scope('rpn_losses'):
             with tf.variable_scope('objectness'):
+                # czq: focal loss for stage 1
+                #cls_fl_gamma = self._config.loss_config.cls_fl_gamma
+                #cls_fl_alpha = self._config.loss_config.cls_fl_alpha
+                #cls_loss = \
+                #    losses.SigmoidFocalClassificationLoss(gamma=cls_fl_gamma,
+                #                                          alpha=cls_fl_alpha)
+
                 cls_loss = losses.WeightedSoftmaxLoss()
                 cls_loss_weight = self._config.loss_config.cls_loss_weight
                 objectness_loss = cls_loss(objectness,
@@ -897,7 +906,9 @@ class RpnModel(model.DetectionModel):
                     tf.summary.scalar('objectness', objectness_loss)
 
             with tf.variable_scope('regression'):
-                reg_loss = losses.WeightedSmoothL1Loss()
+                reg_loss = losses.RepulsionLoss()
+
+                
                 reg_loss_weight = self._config.loss_config.reg_loss_weight
                 anchorwise_localization_loss = reg_loss(offsets,
                                                         offsets_gt,
