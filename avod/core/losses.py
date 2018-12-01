@@ -207,11 +207,14 @@ class RepulsionLoss(Loss):
         pre_2 = tf.tile(tf.expand_dims(target_tensor,0),[len_of_pre,1,1])  #shape[len_of_pre,len_of_pre,6]
         ious_over_pre = reploss.cal_iou(pre_1,pre_2)  #shape[len_of_pre,len_of_pre,1]
 
-        rep_loss = tf.reduce_sum([
-                  reploss.attraction_term(prediction_tensor,target_tensor,ious),
-                  self._alpha*reploss.rep_term_gt(prediction_tensor,target_tensor,ious,self._smooth_rep_gt),
-                  self._betta*reploss.rep_term_box(ious_over_pre,self._smooth_rep_box)])
-        return rep_loss*weight
+        attraction_term = reploss.attraction_term(prediction_tensor,target_tensor,ious)
+        rep_term_gt = reploss.rep_term_gt(prediction_tensor,target_tensor,ious,self._smooth_rep_gt)
+        rep_term_box = reploss.rep_term_box(ious_over_pre,self._smooth_rep_box)
+
+
+        rep_loss = attraction_term + self._alpha*rep_term_gt
+        #rep_loss = attraction_term + self._alpha*rep_term_gt + self._betta*rep_term_box
+        return rep_loss*weight*10
 
 
 

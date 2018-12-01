@@ -907,7 +907,7 @@ class RpnModel(model.DetectionModel):
 
             with tf.variable_scope('regression'):
                 reg_loss = losses.RepulsionLoss()
-
+                #reg_loss = losses.WeightedSmoothL1Loss()
                 
                 reg_loss_weight = self._config.loss_config.reg_loss_weight
                 anchorwise_localization_loss = reg_loss(offsets,

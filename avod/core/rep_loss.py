@@ -17,7 +17,7 @@ def cal_interarea(bbox1,bbox2):
   #    inter_area = (xI2-xI1+1)*(yI2-yI1+1)*(zI2-zI1+1)
   #else:
   #    inter_area = -1
-  inter_area = (xI2-xI1+1)*(yI2-yI1+1)*(zI2-zI1+1)
+  inter_area = (xI2-xI1)*(yI2-yI1)*(zI2-zI1)
   return  tf.maximum(inter_area,0.0)
 
 def cal_iou(bbox1,bbox2):
@@ -25,23 +25,29 @@ def cal_iou(bbox1,bbox2):
   tx2,ty2,tz2,dx2,dy2,dz2 = tf.split(bbox2,6,axis=2)
 
   inter = cal_interarea(bbox1,bbox2)
-  union = dx1*dy1*dz1+dx2*dy2*dz2-inter
-  return tf.maximum(inter/union,0.0)
+  union = tf.maximum(dx1*dy1*dz1+dx2*dy2*dz2-inter,0.000001) 
+
+  iou = inter/union
+  iou = tf.where(tf.less_equal(iou,1.0),iou,iou-iou)
+  return tf.maximum(iou,0.0)
 
 def cal_iog(gtbox,prebox):
   gtx,gty,gtz,gdx,gdy,gdz = tf.split(gtbox,6,axis=2)
 
   inter = cal_interarea(gtbox,prebox)
-  gt_area = gdx*gdy*gdz
-  return inter/gt_area
+  gt_area = tf.maximum(gdx*gdy*gdz,0.000001)
+
+  iog = inter/gt_area
+  iog = tf.where(tf.less_equal(iog,1.0),iog,iog-iog)
+  return tf.maximum(iog,0.0)
 
 def smooth_l1(pre,tar):
   diff = pre - tar
   abs_diff = tf.abs(diff)
   abs_diff_lt_1 = tf.less(abs_diff,1.0)
-  return tf.reduce_sum(tf.where(abs_diff_lt_1,
+  return tf.where(abs_diff_lt_1,
     0.5*tf.pow(abs_diff,2),
-    abs_diff-0.5),axis=1)
+    abs_diff-0.5)
 
 def smooth_ln(x,smooth):
   return tf.where(
@@ -57,7 +63,7 @@ def attraction_term(pre,tar,iou):
 
   l1_distances = smooth_l1(pre,gt_boxes_with_max_ious)
 
-  return tf.reduce_sum(tf.cast(l1_distances,tf.float32))/tf.cast(tf.shape(pre)[0],dtype=tf.float32)
+  return tf.reduce_sum(tf.cast(l1_distances,tf.float32),axis=1)/tf.cast(tf.shape(pre)[0],dtype=tf.float32)
 
 
 
@@ -74,18 +80,21 @@ def rep_term_gt(pre,tar,iou,smooth):
   gt_boxes_with_max_ious = tf.gather_nd(tar,iou_indices) #shape[len_of_tar,6] 得到第二大iou对应tar的对应编码
 
   #为方便计算iog，增加pre和tar的维度
-  gt_boxes_with_max_ious = tf.expand_dims(gt_boxes_with_max_ious,axis=1)
-  pre = tf.expand_dims(pre,axis=1)
+  gt_boxes_with_max_ious = tf.expand_dims(gt_boxes_with_max_ious,axis=1) #shape[len_of_tar,1,6]
+  pre = tf.expand_dims(pre,axis=1) #shape[len_of_pre,1,6]
 
-  ln_distances = smooth_ln(cal_iog(gt_boxes_with_max_ious,pre),smooth)
-  return tf.reduce_sum(ln_distances)/tf.cast(tf.shape(pre)[0],dtype=tf.float32)
+  ln_distances = tf.reduce_sum(smooth_ln(cal_iog(gt_boxes_with_max_ious,pre),smooth),axis=1)
+  ln_distances = ln_distances[...,0] 
+
+  return tf.cast(ln_distances,dtype=tf.float32)/tf.maximum(tf.cast(tf.shape(pre)[0],dtype=tf.float32),0.000001)
 
 
 def rep_term_box(iou,smooth):
   iou_over_pre_indices = tf.where(tf.less(iou,1.0))
   iou = tf.gather_nd(iou,iou_over_pre_indices)
 
-  dist_sum = tf.reduce_sum(smooth_ln(iou,smooth))
-  iou_sum = tf.reduce_sum(iou)
+  dist_ln = smooth_ln(iou,smooth)
 
-  return dist_sum/tf.maximum(iou_sum,0.000001)
+  #iou_sum = tf.reduce_sum(iou,axis=1)
+
+  return dist_ln/tf.maximum(iou,0.000001)
