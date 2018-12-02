@@ -395,7 +395,7 @@ class Evaluator:
                 # Save the id of the latest evaluated checkpoint
                 last_checkpoint_id = ckpt_id
 
-    def repeated_checkpoint_run(self):
+    def repeated_checkpoint_run(self, ckpt_start, ckpt_interval):
         """Periodically evaluates the checkpoints inside the `checkpoint_dir`.
 
         This function evaluates all the existing checkpoints as they are being
@@ -452,7 +452,9 @@ class Evaluator:
 
                     # Check if checkpoint has been evaluated already
                     already_evaluated = ckpt_id in already_evaluated_ckpts
-                    if already_evaluated or ckpt_id <= last_checkpoint_id:
+                    # Add start checkpoint_id
+                    if already_evaluated or ckpt_id <= last_checkpoint_id or ckpt_id < ckpt_start or (ckpt_id-ckpt_start)%ckpt_interval != 0:
+
                         number_of_evaluations = max((ckpt_idx + 1,
                                                      number_of_evaluations))
                         continue

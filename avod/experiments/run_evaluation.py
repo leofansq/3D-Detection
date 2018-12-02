@@ -16,7 +16,8 @@ from avod.core.models.rpn_model import RpnModel
 from avod.core.evaluator import Evaluator
 
 
-def evaluate(model_config, eval_config, dataset_config):
+def evaluate(model_config, eval_config, dataset_config, ckpt_config):
+
 
     # Parse eval config
     eval_mode = eval_config.eval_mode
@@ -80,7 +81,7 @@ def evaluate(model_config, eval_config, dataset_config):
                                     eval_config)
 
         if evaluate_repeatedly:
-            model_evaluator.repeated_checkpoint_run()
+            model_evaluator.repeated_checkpoint_run(*ckpt_config)
         else:
             model_evaluator.run_latest_checkpoints()
 
@@ -109,6 +110,18 @@ def main(_):
                         default='0',
                         help='CUDA device id')
 
+    parser.add_argument('--ckpt_start',
+                        type=int,
+                        dest='ckpt_start',
+                        default=60000,
+                        help='start of ckpt id')
+
+    parser.add_argument('--ckpt_interval',
+                        type=int,
+                        dest='ckpt_interval',
+                        default=1000,
+                        help='interval of ckpt id')
+
     args = parser.parse_args()
 
     # Parse pipeline config
@@ -123,7 +136,9 @@ def main(_):
     # Set CUDA device id
     os.environ['CUDA_VISIBLE_DEVICES'] = args.device
 
-    evaluate(model_config, eval_config, dataset_config)
+    ckpt_config = [args.ckpt_start, args.ckpt_interval]
+    evaluate(model_config, eval_config, dataset_config, ckpt_config)
+
 
 
 if __name__ == '__main__':
