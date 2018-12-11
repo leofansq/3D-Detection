@@ -7,16 +7,12 @@ def cal_interarea(bbox1,bbox2):
 
   xI1 = tf.maximum(tx1-0.5*dx1,tx2-0.5*dx2)
   yI1 = tf.maximum(ty1-0.5*dy1,ty2-0.5*dy2)
-  zI1 = tf.maximum(tz1-0.5*dz1,tz2-0.5*dz2)
+  zI1 = tf.maximum(tz1,tz2)
 
   xI2 = tf.minimum(tx1+0.5*dx1,tx2+0.5*dx2)
   yI2 = tf.minimum(ty1+0.5*dy1,ty2+0.5*dy2)
-  zI2 = tf.minimum(tz1+0.5*dz1,tz2+0.5*dz2)
-
-  #if (xI2>xI1) and (yI2>yI1) and (zI2>zI1):
-  #    inter_area = (xI2-xI1+1)*(yI2-yI1+1)*(zI2-zI1+1)
-  #else:
-  #    inter_area = -1
+  zI2 = tf.minimum(tz1+dz1,tz2+dz2)
+  
   inter_area = (xI2-xI1)*(yI2-yI1)*(zI2-zI1)
   return  tf.maximum(inter_area,0.0)
 
@@ -67,7 +63,7 @@ def attraction_term(pre,tar,iou):
 
 
 
-def rep_term_gt(pre,tar,iou,smooth):
+def rep_term(pre,tar,iou,smooth):
   iou = tf.reduce_sum(iou,axis=2)  #shape[len_of_pre,len_of_tar,1]  ---> shape[len_of_pre,len_of_tar]
   _,indices_2highest_iou = tf.nn.top_k(iou,k=2)  #shape[len_of_pre,2]
 
@@ -86,15 +82,4 @@ def rep_term_gt(pre,tar,iou,smooth):
   ln_distances = tf.reduce_sum(smooth_ln(cal_iog(gt_boxes_with_max_ious,pre),smooth),axis=1)
   ln_distances = ln_distances[...,0] 
 
-  return tf.cast(ln_distances,dtype=tf.float32)/tf.maximum(tf.cast(tf.shape(pre)[0],dtype=tf.float32),0.000001)
-
-
-def rep_term_box(iou,smooth):
-  iou_over_pre_indices = tf.where(tf.less(iou,1.0))
-  iou = tf.gather_nd(iou,iou_over_pre_indices)
-
-  dist_ln = smooth_ln(iou,smooth)
-
-  #iou_sum = tf.reduce_sum(iou,axis=1)
-
-  return dist_ln/tf.maximum(iou,0.000001)
+  return tf.cast(ln_distances,dtype=tf.float32)/tf.cast(tf.shape(pre)[0],dtype=tf.float32)

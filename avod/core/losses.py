@@ -177,23 +177,31 @@ class WeightedSoftmaxLoss(Loss):
 
 
 class RepulsionLoss(Loss):
+    """Repulsion loss function.
+    The Repulsion Loss = attraction_term + alpha * rep_term"""
 
-
-    def __init__(self, alpha=0.5, betta=0.5,
-                 smooth_rep_gt=0.99, smooth_rep_box=0.01):
+    def __init__(self, alpha=0.25, smooth_rep=0.99):
         """Constructor.
         """
         self._alpha = alpha
-        self._betta = betta
-        self._smooth_rep_gt = smooth_rep_gt
-        self._smooth_rep_box = smooth_rep_box
+        self._smooth_rep = smooth_rep
 
     def _compute_loss(self,
                       prediction_tensor,
                       target_tensor,
                       weight,
                       class_indices=None):
-
+        """Compute loss function.
+        Args:
+            prediction_tensor: A float tensor of shape [num_anchors,
+                code_size] representing the (encoded) predicted
+                locations of objects.
+            target_tensor: A float tensor of shape [num_anchors,
+                code_size] representing the regression targets
+        Returns:
+          loss: an anchorwise tensor of shape [num_anchors] representing
+            the value of the loss function
+        """
         len_of_pre = tf.shape(prediction_tensor)[0]
         len_of_tar = tf.shape(target_tensor)[0]
 
@@ -202,20 +210,11 @@ class RepulsionLoss(Loss):
         tar = tf.tile(tf.expand_dims(target_tensor,0),[len_of_pre,1,1])   #shape[len_of_pre,len_of_tar,6]     
         ious = reploss.cal_iou(pre,tar)  #shape[len_of_pre,len_of_tar,1]
 
-        #For rep_term_box : Caluculate IOU of Pre & Pre
-        pre_1 = tf.tile(tf.expand_dims(prediction_tensor,1),[1,len_of_pre,1]) #shape[len_of_pre,len_of_pre,6]
-        pre_2 = tf.tile(tf.expand_dims(target_tensor,0),[len_of_pre,1,1])  #shape[len_of_pre,len_of_pre,6]
-        ious_over_pre = reploss.cal_iou(pre_1,pre_2)  #shape[len_of_pre,len_of_pre,1]
-
         attraction_term = reploss.attraction_term(prediction_tensor,target_tensor,ious)
-        rep_term_gt = reploss.rep_term_gt(prediction_tensor,target_tensor,ious,self._smooth_rep_gt)
-        rep_term_box = reploss.rep_term_box(ious_over_pre,self._smooth_rep_box)
+        rep_term = reploss.rep_term(prediction_tensor,target_tensor,ious,self._smooth_rep)
 
-
-        rep_loss = attraction_term + self._alpha*rep_term_gt
-        #rep_loss = attraction_term + self._alpha*rep_term_gt + self._betta*rep_term_box
-        return rep_loss*weight*10
-
+        rep_loss = attraction_term + self._alpha*rep_term
+        return rep_loss*weight*100
 
 
 
