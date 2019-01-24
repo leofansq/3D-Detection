@@ -886,12 +886,10 @@ class RpnModel(model.DetectionModel):
 
         with tf.variable_scope('rpn_losses'):
             with tf.variable_scope('objectness'):
-                # czq: focal loss for stage 1
-                #cls_fl_gamma = self._config.loss_config.cls_fl_gamma
-                #cls_fl_alpha = self._config.loss_config.cls_fl_alpha
+                #FocalLoss(Stage 1)
                 #cls_loss = \
-                #    losses.SigmoidFocalClassificationLoss(gamma=cls_fl_gamma,
-                #                                          alpha=cls_fl_alpha)
+                #    losses.SigmoidFocalClassificationLoss(gamma=1.75,
+                #                                          alpha=0.38)
 
                 cls_loss = losses.WeightedSoftmaxLoss()
                 cls_loss_weight = self._config.loss_config.cls_loss_weight
