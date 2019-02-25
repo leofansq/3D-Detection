@@ -222,16 +222,33 @@ class AvodModel(model.DetectionModel):
             # These should be all 0's since there is only 1 image
             tf_box_indices = get_box_indices(bev_boxes_norm_batches)
 
-            # Do ROI Pooling on BEV
+            # Trans Fusion: Img2BEV
+            bev_feature_maps = tf.reduce_mean(bev_feature_maps,axis = 0)
+            img_feature_maps_bk = img_feature_maps
+            img_feature_maps = tf.reduce_mean(img_feature_maps,axis = 0)
+            img_feature_maps = tf.reduce_mean(img_feature_maps,axis = 1)
+            bev_rois = bev_feature_maps
+
+            img2bev_index = tf.cast(tf.reduce_mean(bev_rois,axis = 2)*360,tf.int32)
+            index1,index2 = tf.split(img2bev_index,2,axis = 0)
+
+            img_rois_1 = tf.gather_nd(img_feature_maps,tf.expand_dims(index1,axis=2))
+            img_rois_2 = tf.gather_nd(img_feature_maps,tf.expand_dims(index1,axis=2))
+            img_rois = tf.concat([img_rois_1,img_rois_2],axis = 0)
+
+            new_bev_feature_map = tf.expand_dims(0.99*bev_rois+0.01*img_rois,axis = 0)
+
+            # ROI Pooling
+            # ROI Pooling on new BEV
             bev_rois = tf.image.crop_and_resize(
-                bev_feature_maps,
+                new_bev_feature_map,
                 bev_proposal_boxes_norm_tf_order,
                 tf_box_indices,
                 self._proposal_roi_crop_size,
                 name='bev_rois')
-            # Do ROI Pooling on image
+            # ROI Pooling on image
             img_rois = tf.image.crop_and_resize(
-                img_feature_maps,
+                img_feature_maps_bk,
                 img_proposal_boxes_norm_tf_order,
                 tf_box_indices,
                 self._proposal_roi_crop_size,
