@@ -98,6 +98,9 @@ class BevSlices(bev_generator.BevGenerator):
 
             height_maps.append(height_map)
 
+        #height_maps[3] = (height_maps[3]+height_maps[4])
+        #del(height_maps[4])
+
         # Rotate height maps 90 degrees
         # (transpose and flip) is faster than np.rot90
         height_maps_out = [np.flip(height_maps[map_idx].transpose(), axis=0)
