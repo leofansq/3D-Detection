@@ -904,7 +904,7 @@ class RpnModel(model.DetectionModel):
                     tf.summary.scalar('objectness', objectness_loss)
 
             with tf.variable_scope('regression'):
-                reg_loss = losses.RepulsionLoss()
+                reg_loss = losses.AELoss()
                 #reg_loss = losses.WeightedSmoothL1Loss()
                 
                 reg_loss_weight = self._config.loss_config.reg_loss_weight

@@ -63,7 +63,7 @@ def attraction_term(pre,tar,iou):
 
 
 
-def rep_term(pre,tar,iou,smooth):
+def exclusion_term(pre,tar,iou,smooth):
   iou = tf.reduce_sum(iou,axis=2)  #shape[len_of_pre,len_of_tar,1]  ---> shape[len_of_pre,len_of_tar]
   _,indices_2highest_iou = tf.nn.top_k(iou,k=2)  #shape[len_of_pre,2]
 

@@ -15,7 +15,7 @@ import tensorflow as tf
 import numpy as np
 
 from avod.core import ops
-from avod.core import rep_loss as reploss
+from avod.core import AE_loss as aeloss
 
 class Loss(object):
     """Abstract base class for loss functions."""
@@ -176,11 +176,11 @@ class WeightedSoftmaxLoss(Loss):
         return tf.reduce_sum(per_row_cross_ent) * weight
 
 
-class RepulsionLoss(Loss):
-    """Repulsion loss function.
-    The Repulsion Loss = attraction_term + alpha * rep_term"""
+class AELoss(Loss):
+    """AE loss function.
+    The AE Loss = (1-alpha)*attraction_term + alpha * exclusion_term"""
 
-    def __init__(self, alpha=0.25, smooth_rep=0.99):
+    def __init__(self, alpha=0.1, smooth_rep=0.99):
         """Constructor.
         """
         self._alpha = alpha
@@ -205,16 +205,16 @@ class RepulsionLoss(Loss):
         len_of_pre = tf.shape(prediction_tensor)[0]
         len_of_tar = tf.shape(target_tensor)[0]
 
-        #For attraction_term & rep_term_gt : Calculate IOU of Pre & Tar
+        #For attraction_term & exclusion_term_gt : Calculate IOU of Pre & Tar
         pre = tf.tile(tf.expand_dims(prediction_tensor,1),[1,len_of_tar,1])   #shape[len_of_pre,len_of_tar,6]
         tar = tf.tile(tf.expand_dims(target_tensor,0),[len_of_pre,1,1])   #shape[len_of_pre,len_of_tar,6]     
-        ious = reploss.cal_iou(pre,tar)  #shape[len_of_pre,len_of_tar,1]
+        ious = aeloss.cal_iou(pre,tar)  #shape[len_of_pre,len_of_tar,1]
 
-        attraction_term = reploss.attraction_term(prediction_tensor,target_tensor,ious)
-        rep_term = reploss.rep_term(prediction_tensor,target_tensor,ious,self._smooth_rep)
+        attraction_term = aeloss.attraction_term(prediction_tensor,target_tensor,ious)
+        exclusion_term = aeloss.exclusion_term(prediction_tensor,target_tensor,ious,self._smooth_rep)
 
-        rep_loss = attraction_term + self._alpha*rep_term
-        return rep_loss*weight*100
+        AE_loss = (1-self._alpha)*attraction_term + self._alpha*exclusion_term
+        return AE_loss*weight*100
 
 class SigmoidFocalClassificationLoss(Loss):
     """Sigmoid focal cross entropy loss.
