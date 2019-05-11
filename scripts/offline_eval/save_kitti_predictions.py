@@ -20,11 +20,11 @@ def main():
     ##############################
     # Options
     ##############################
-    checkpoint_name = 'avod_cars_example'
+    checkpoint_name = 'pyramid_cars_with_aug_trans_fusion_mix'
 
     data_split = 'val'
 
-    global_steps = None
+    global_steps = [102000]
     # global_steps = [28000, 19000, 33000, 34000]
 
     score_threshold = 0.1
@@ -53,7 +53,7 @@ def main():
     dataset_config.data_split = data_split
     dataset_config.aug_list = []
 
-    if data_split == 'test':
+    if data_split == 'val':
         dataset_config.data_split_dir = 'testing'
 
     dataset = DatasetBuilder.build_kitti_dataset(dataset_config,

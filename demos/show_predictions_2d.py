@@ -56,8 +56,9 @@ def main():
     # gt_classes = ['Pedestrian', 'Cyclist']
 
     # Overwrite this to select a specific checkpoint
-    global_step = None
-    checkpoint_name = 'avod_cars_example'
+    #global_step = None
+    global_step = 119000
+    checkpoint_name = 'pyramid_cars_with_aug_trans_fusion_mix'
 
     # Drawing Toggles
     draw_proposals_separate = False
@@ -75,7 +76,7 @@ def main():
     save_empty_images = True
 
     draw_score = True
-    draw_iou = True
+    draw_iou = False
     ##############################
     # End of Options
     ##############################
@@ -231,7 +232,8 @@ def main():
         ##############################
 
         # Get ground truth labels
-        if dataset.has_labels:
+        if dataset.has_labels==False:
+        #if dataset.has_labels:
             gt_objects = obj_utils.read_labels(dataset.label_dir, img_idx)
         else:
             gt_objects = []
@@ -409,7 +411,7 @@ def draw_proposals(filtered_gt_objs,
         # Draw 3D boxes
         vis_utils.draw_box_3d(prop_3d_axes, obj, p_matrix,
                               show_orientation=draw_orientations_on_prop,
-                              color_table=['r', 'y', 'r', 'w'],
+                              color_table=['r', 'y', 'w', 'w'],
                               line_width=2,
                               double_line=False)
 
@@ -465,7 +467,7 @@ def draw_predictions(filtered_gt_objs,
         # Draw 3D boxes
         vis_utils.draw_box_3d(pred_3d_axes, obj, p_matrix,
                               show_orientation=draw_orientations_on_pred,
-                              color_table=['r', 'y', 'r', 'w'],
+                              color_table=['r', 'y', 'w', 'w'],
                               line_width=2,
                               double_line=False)
         if draw_iou:
@@ -545,7 +547,7 @@ def draw_3d_predictions(filtered_gt_objs,
         # Draw 3D boxes
         vis_utils.draw_box_3d(pred_3d_axes, obj, p_matrix,
                               show_orientation=draw_orientations_on_pred,
-                              color_table=['r', 'y', 'r', 'w'],
+                              color_table=['r', 'y', 'w', 'w'],
                               line_width=2,
                               double_line=False)
         if draw_iou:

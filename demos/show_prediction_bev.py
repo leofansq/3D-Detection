@@ -28,6 +28,8 @@ def draw_boxes(image, gt_boxes_norm, pre_boxes_norm):
     # Load Image
     image = (image * 255.0).astype(np.uint8)
     image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+    #image = cv2.add(image,image)
+    #image = cv2.bitwise_not(image)
     # Draw prediction boxes
     for pre_box_points in pre_boxes_norm:
         image_shape = np.flip(image.shape[0:2], axis=0)
@@ -92,7 +94,7 @@ def main():
     show_images = False       # Whether to show the images
 
     point_cloud_source = 'lidar'
-    pre_label_dir = '/home/cecilia/leo_projects/bishe2019/3D-Detection/avod/data/outputs/pyramid_cars_with_aug_rep_loss/predictions/kitti_native_eval/0.1/60000/data/'
+    pre_label_dir = '/home/cecilia/leo_projects/bishe2019/3D-Detection/avod/data/outputs/pyramid_cars_with_aug_rep_loss/predictions/kitti_native_eval/0.1/112000/data/'
     ##############################
     # End of Options
     ##############################

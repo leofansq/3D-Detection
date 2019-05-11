@@ -8,7 +8,7 @@ def main():
     """
 
     # Output from native eval
-    results_file = 'results/pyramid_cars_with_aug_example_results_0.1.txt'
+    results_file = '/home/cecilia/leo_projects/bishe2019/3D-Detection/avod/data/outputs/pyramid_cars_with_aug_trans_fusion_mix/predictions/kitti_native_eval/results_0.1.txt'
 
     # Top n medium score indices to print
     top_n_to_print = 5
@@ -77,7 +77,7 @@ def main():
         ax_arr[plot_row, plot_col].set_title(detection_type)
 
     plt.legend(labels=['easy', 'medium', 'hard'])
-    plt.show()
+    plt.savefig('AP.png')
 
 
 if __name__ == '__main__':
